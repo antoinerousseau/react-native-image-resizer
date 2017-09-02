@@ -40,7 +40,7 @@ Manual link information for Android: [Link](docs/android_manual_config.md)
 ```javascript
 import ImageResizer from 'react-native-image-resizer';
 
-ImageResizer.createResizedImage(imageUri, newWidth, newHeight, compressFormat, quality, rotation, outputPath).then((response) => {
+ImageResizer.createResizedImage(imageUri, newWidth, newHeight, compressFormat, quality, rotation).then((response) => {
   // response.uri is the URI of the new image that can now be displayed, uploaded...
   // response.path is the path of the new image
   // response.name is the name of the new image with the extension
@@ -57,19 +57,18 @@ A basic, sample app is available in [the `example` folder](https://github.com/ba
 
 ## API
 
-### `promise createResizedImage(path, maxWidth, maxHeight, compressFormat, quality, rotation = 0, outputPath)`
+### `Promise createResizedImage(path, maxWidth, maxHeight, compressFormat, quality, rotation = 0)`
 
 The promise resolves with an object containing: `path`, `uri`, `name` and `size` of the new file. The URI can be used directly as the `source` of an [`<Image>`](https://facebook.github.io/react-native/docs/image.html) component.
 
 Option | Description
 ------ | -----------
 path | Path of image file, or a base64 encoded image string prefixed with 'data:image/imagetype' where `imagetype` is jpeg or png.
-maxWidth | Image max width (ratio is preserved)
-maxHeight | Image max height (ratio is preserved)
+newHeight | New image width
+newHeight | New image height
 compressFormat | Can be either JPEG, PNG or WEBP (android only).
 quality | A number between 0 and 100. Used for the JPEG compression.
 rotation | Rotation to apply to the image, in degrees, for android. On iOS, rotation is limited (and rounded) to multiples of 90 degrees.
-outputPath | The resized image path. If null, resized image will be stored in cache folder. To set outputPath make sure to add option for rotation too (if no rotation is needed, just set it to 0).
 
 ## Other open-source modules by the folks at [BAM](http://github.com/bamlab)
 

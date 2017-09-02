@@ -31,53 +31,35 @@ public class ImageResizer {
     /**
      * Resize the specified bitmap, keeping its aspect ratio.
      */
-    private static Bitmap resizeImage(Bitmap image, int maxWidth, int maxHeight) {
-        Bitmap newImage = null;
+    private static Bitmap resizeImage(Bitmap image, int width, int height) {
         if (image == null) {
             return null; // Can't load the image from the given path.
         }
 
-        if (maxHeight > 0 && maxWidth > 0) {
-            float width = image.getWidth();
-            float height = image.getHeight();
-
-            float ratio = Math.min((float)maxWidth / width, (float)maxHeight / height);
-
-            int finalWidth = (int) (width * ratio);
-            int finalHeight = (int) (height * ratio);
-            try {
-                newImage = Bitmap.createScaledBitmap(image, finalWidth, finalHeight, true);
-            } catch (OutOfMemoryError e) {
-                return null;
-            }
+        try {
+            return Bitmap.createScaledBitmap(image, width, height, true);
+        } catch (OutOfMemoryError e) {
+            return null;
         }
-
-        return newImage;
     }
 
     /**
      * Rotate the specified bitmap with the given angle, in degrees.
      */
-    public static Bitmap rotateImage(Bitmap source, float angle)
-    {
-        Bitmap retVal;
-
+    public static Bitmap rotateImage(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         try {
-            retVal = Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+            return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
         } catch (OutOfMemoryError e) {
             return null;
         }
-        return retVal;
     }
 
     /**
      * Save the given bitmap in a directory. Extension is automatically generated using the bitmap format.
      */
-    private static File saveImage(Bitmap bitmap, File saveDirectory, String fileName,
-                                    Bitmap.CompressFormat compressFormat, int quality)
-            throws IOException {
+    private static File saveImage(Bitmap bitmap, File saveDirectory, String fileName, Bitmap.CompressFormat compressFormat, int quality) throws IOException {
         if (bitmap == null) {
             throw new IOException("The bitmap couldn't be resized");
         }
@@ -100,70 +82,6 @@ public class ImageResizer {
         fos.close();
 
         return newFile;
-    }
-
-    /**
-     * Get {@link File} object for the given Android URI.<br>
-     * Use content resolver to get real path if direct path doesn't return valid file.
-     */
-    private static File getFileFromUri(Context context, Uri uri) {
-
-        // first try by direct path
-        File file = new File(uri.getPath());
-        if (file.exists()) {
-            return file;
-        }
-
-        // try reading real path from content resolver (gallery images)
-        Cursor cursor = null;
-        try {
-            String[] proj = {MediaStore.Images.Media.DATA};
-            cursor = context.getContentResolver().query(uri, proj, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            String realPath = cursor.getString(column_index);
-            file = new File(realPath);
-        } catch (Exception ignored) {
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-
-        return file;
-    }
-
-
-    /**
-     * Get orientation by reading Image metadata
-     */
-    public static int getOrientation(Context context, Uri uri) {
-        try {
-            File file = getFileFromUri(context, uri);
-            if (file.exists()) {
-                ExifInterface ei = new ExifInterface(file.getAbsolutePath());
-                return getOrientation(ei);
-            }
-        } catch (Exception ignored) { }
-
-        return 0;
-    }
-
-    /**
-     * Convert metadata to degrees
-     */
-    public static int getOrientation(ExifInterface exif) {
-        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-        switch (orientation) {
-            case ExifInterface.ORIENTATION_ROTATE_90:
-                return 90;
-            case ExifInterface.ORIENTATION_ROTATE_180:
-                return 180;
-            case ExifInterface.ORIENTATION_ROTATE_270:
-                return 270;
-            default:
-                return 0;
-        }
     }
 
     /**
@@ -222,8 +140,7 @@ public class ImageResizer {
     /**
      * Loads the bitmap resource from the file specified in imagePath.
      */
-    private static Bitmap loadBitmapFromFile(Context context, Uri imageUri, int newWidth,
-                                             int newHeight) throws IOException  {
+    private static Bitmap loadBitmapFromFile(Context context, Uri imageUri, int newWidth, int newHeight) throws IOException  {
         // Decode the image bounds to find the size of the source image.
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -232,49 +149,18 @@ public class ImageResizer {
         // Set a sample size according to the image size to lower memory usage.
         options.inSampleSize = calculateInSampleSize(options, newWidth, newHeight);
         options.inJustDecodeBounds = false;
-        System.out.println(options.inSampleSize);
+        //System.out.println(options.inSampleSize);
         return loadBitmap(context, imageUri, options);
-
-    }
-
-    /**
-     * Loads the bitmap resource from a base64 encoded jpg or png.
-     * Format is as such:
-     * png: 'data:image/png;base64,iVBORw0KGgoAA...'
-     * jpg: 'data:image/jpeg;base64,/9j/4AAQSkZJ...'
-     */
-    private static Bitmap loadBitmapFromBase64(Uri imageUri) {
-        Bitmap sourceImage = null;
-        String imagePath = imageUri.getSchemeSpecificPart();
-        int commaLocation = imagePath.indexOf(',');
-        if (commaLocation != -1) {
-            final String mimeType = imagePath.substring(0, commaLocation).replace('\\','/').toLowerCase();
-            final boolean isJpeg = mimeType.startsWith(IMAGE_JPEG);
-            final boolean isPng = !isJpeg && mimeType.startsWith(IMAGE_PNG);
-
-            if (isJpeg || isPng) {
-                // base64 image. Convert to a bitmap.
-                final String encodedImage = imagePath.substring(commaLocation + 1);
-                final byte[] decodedString = Base64.decode(encodedImage, Base64.DEFAULT);
-                sourceImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-            }
-        }
-
-        return sourceImage;
     }
 
     /**
      * Create a resized version of the given image.
      */
-    public static File createResizedImage(Context context, Uri imageUri, int newWidth,
-                                            int newHeight, Bitmap.CompressFormat compressFormat,
-                                            int quality, int rotation, String outputPath) throws IOException  {
+    public static File createResizedImage(Context context, Uri imageUri, int newWidth, int newHeight, Bitmap.CompressFormat compressFormat, int quality, int rotation) throws IOException {
         Bitmap sourceImage = null;
         String imageUriScheme = imageUri.getScheme();
         if (imageUriScheme == null || imageUriScheme.equalsIgnoreCase(SCHEME_FILE) || imageUriScheme.equalsIgnoreCase(SCHEME_CONTENT)) {
             sourceImage = ImageResizer.loadBitmapFromFile(context, imageUri, newWidth, newHeight);
-        } else if (imageUriScheme.equalsIgnoreCase(SCHEME_DATA)) {
-            sourceImage = ImageResizer.loadBitmapFromBase64(imageUri);
         }
 
         if (sourceImage == null) {
@@ -283,30 +169,18 @@ public class ImageResizer {
 
         // Scale it first so there are fewer pixels to transform in the rotation
         Bitmap scaledImage = ImageResizer.resizeImage(sourceImage, newWidth, newHeight);
-        if (sourceImage != scaledImage) {
-            sourceImage.recycle();
-        }
 
         // Rotate if necessary
-        Bitmap rotatedImage = scaledImage;
-        int orientation = getOrientation(context, imageUri);
-        rotation = orientation + rotation;
-        rotatedImage = ImageResizer.rotateImage(scaledImage, rotation);
-
-        if (scaledImage != rotatedImage) {
-            scaledImage.recycle();
-        }
+        Bitmap rotatedImage = ImageResizer.rotateImage(scaledImage, rotation);
 
         // Save the resulting image
         File path = context.getCacheDir();
-        if (outputPath != null) {
-            path = new File(outputPath);
-        }
 
-        File newFile = ImageResizer.saveImage(rotatedImage, path,
-                Long.toString(new Date().getTime()), compressFormat, quality);
+        File newFile = ImageResizer.saveImage(rotatedImage, path, Long.toString(new Date().getTime()), compressFormat, quality);
 
         // Clean up remaining image
+        sourceImage.recycle();
+        scaledImage.recycle();
         rotatedImage.recycle();
 
         return newFile;

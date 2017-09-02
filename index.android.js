@@ -1,12 +1,11 @@
-import React from 'react-native';
+import {NativeModules} from 'react-native';
 
-const ImageResizerAndroid = React.NativeModules.ImageResizerAndroid;
+const ImageResizerAndroid = NativeModules.ImageResizerAndroid;
 
 export default {
-  createResizedImage: (imagePath, newWidth, newHeight, compressFormat, quality, rotation = 0, outputPath) => {
+  createResizedImage: (imagePath, newWidth, newHeight, compressFormat, quality, rotation = 0) => {
     return new Promise((resolve, reject) => {
-      ImageResizerAndroid.createResizedImage(imagePath, newWidth, newHeight,
-        compressFormat, quality, rotation, outputPath, resolve, reject);
+      ImageResizerAndroid.createResizedImage(imagePath, newWidth, newHeight, compressFormat, quality, rotation, resolve, reject);
     });
   },
 };
